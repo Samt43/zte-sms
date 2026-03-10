@@ -2,6 +2,8 @@ const merge = require('lodash.merge');
 const http = require('http');
 const qs = require('qs');
 const { hex_md5 } = require('./md5');
+const crypto = require("crypto");
+
 const {
   getCurrentTimeString,
   encodeMessage,
@@ -30,6 +32,7 @@ class Modem {
     if (options.method === 'POST') {
       options.path = this.setPath;
       headers['Content-Length'] = data.length;
+      headers['Content-Type'] = "application/x-www-form-urlencoded";
     } else if (options.method === 'GET') {
       options.path += `?${data}`;
       data = '';
@@ -56,22 +59,36 @@ class Modem {
       });
       request.on('error', (error) => { reject(error); });
       data && request.write(data);
-      request.end();
+	    request.end();
     });
   }
 
   async #login() {
+    const ldResponse = await this.#request({ method: "GET" }, { cmd: "LD", isTest: false });
+    if (!ldResponse.data.LD) {
+      throw new Error("Failed to retrieve salt (LD) from modem.");
+    }
+    const ld = ldResponse.data.LD;
+
+    const firstHash = crypto.createHash("sha256").update(this.modemPassword).digest("hex").toUpperCase();
+    const finalHash = crypto
+      .createHash("sha256")
+      .update(firstHash + ld)
+      .digest("hex")
+      .toUpperCase();
+
     const data = {
       isTest: false,
-      goformId: 'LOGIN',
-      password: Buffer.from(this.modemPassword).toString('base64'),
+      goformId: "LOGIN",
+      password: finalHash,
     };
     const options = { method: 'POST' };
     const response = await this.#request(options, data);
-    if (response.data.result !== '0') {
-      throw new Error('Login to modem failed.');
+
+    if (response.data.result != '0') {
+      throw new Error("Login to modem failed.");
     }
-    this.loginCookieValue = response.response.headers['set-cookie'][0].split(';')[0];
+    this.loginCookieValue = response.response.headers["set-cookie"][0].split(";")[0];
   }
 
   async #logout() {
@@ -80,7 +97,9 @@ class Modem {
       goformId: 'LOGOUT',
       AD: await this.#getAD(),
     };
-    const options = { method: 'POST' };
+    const options = {
+      method: 'POST',
+      headers: { Cookie: this.loginCookieValue },};
     await this.#request(options, data);
     this.loginCookieValue = '';
   }
@@ -107,7 +126,16 @@ class Modem {
   async #getAD() {
     const modemVersion = await this.#getModemVersion();
     const RD = await this.#getRD();
-    return hex_md5(`${hex_md5(modemVersion)}${RD}`);
+
+    const sessionID = this.loginCookieValue.replace("JSESSIONID=", "");
+    const firstHash = crypto.createHash("sha256").update("F50_FLYMODEM_ZYV1.0.0B16" + "MU300_ZYV1.0.0B16").digest("hex").toUpperCase();
+    const finalHash = crypto
+      .createHash("sha256")
+      .update(firstHash + sessionID)
+      .digest("hex")
+      .toUpperCase();
+
+    return finalHash;
   }
 
   async #getRD() {
@@ -115,7 +143,7 @@ class Modem {
       isTest: false,
       cmd: 'RD',
     }
-    const options = { method: 'GET' };
+    const options = { method: 'GET', headers: { Cookie: this.loginCookieValue }};
     const response = await this.#request(options, data);
 
     if (!response.data.RD) {
