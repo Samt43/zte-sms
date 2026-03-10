@@ -116,7 +116,7 @@ class Modem {
     const options = { method: 'GET' };
     const response = await this.#request(options, data);
     if (response.data.wa_inner_version || response.data.cr_version) {
-      this.modemVersion = `${response.data?.cr_version}${response.data?.wa_inner_version}`;
+      this.modemVersion = `${response.data?.wa_inner_version}${response.data?.cr_version}`;
       return this.modemVersion;
     } else {
       throw new Error('Getting modem version failed.');
@@ -128,7 +128,7 @@ class Modem {
     const RD = await this.#getRD();
 
     const sessionID = this.loginCookieValue.replace("JSESSIONID=", "");
-    const firstHash = crypto.createHash("sha256").update(modemVersion.wa_inner_version + modemVersion.cr_version).digest("hex").toUpperCase();
+    const firstHash = crypto.createHash("sha256").update(modemVersion).digest("hex").toUpperCase();
     const finalHash = crypto
       .createHash("sha256")
       .update(firstHash + sessionID)
