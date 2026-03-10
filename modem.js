@@ -128,7 +128,7 @@ class Modem {
     const RD = await this.#getRD();
 
     const sessionID = this.loginCookieValue.replace("JSESSIONID=", "");
-    const firstHash = crypto.createHash("sha256").update("F50_FLYMODEM_ZYV1.0.0B16" + "MU300_ZYV1.0.0B16").digest("hex").toUpperCase();
+    const firstHash = crypto.createHash("sha256").update(modemVersion.wa_inner_version + modemVersion.cr_version).digest("hex").toUpperCase();
     const finalHash = crypto
       .createHash("sha256")
       .update(firstHash + sessionID)
