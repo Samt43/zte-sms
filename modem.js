@@ -313,6 +313,41 @@ class Modem {
     await this.#logout();
     return message;
   }
+
+  async resetConnection() {
+    await this.#login();
+    const data = {
+      isTest: false,
+      goformId: 'DISCONNECT_NETWORK',
+      notCallback: true,
+      AD: await this.#getAD(),
+    };
+    const options = {
+      method: 'POST',
+      headers: { Cookie: this.loginCookieValue },
+    };
+    const response = await this.#request(options, data);
+    if (response.data.result !== 'success') {
+      throw new Error('Error resetting connection. (disconnect failed)');
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  
+    const dataReconnect = {
+      isTest: false,
+      goformId: 'CONNECT_NETWORK',
+      notCallback: true,
+      AD: await this.#getAD(),
+    };
+
+    const responseConnect = await this.#request(options, data);
+    if (responseConnect.data.result !== 'success') {
+      throw new Error('Error resetting connection. (reconnect failed)');
+    }
+
+    await this.#logout();
+    return message;
+  }
 }
 
 module.exports = Modem;
