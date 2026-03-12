@@ -340,13 +340,12 @@ class Modem {
       AD: await this.#getAD(),
     };
 
-    const responseConnect = await this.#request(options, data);
+    const responseConnect = await this.#request(options, dataReconnect);
     if (responseConnect.data.result !== 'success') {
       throw new Error('Error resetting connection. (reconnect failed)');
     }
 
     await this.#logout();
-    return message;
   }
 }
 
