@@ -355,6 +355,39 @@ class Modem {
 
 
   }
+
+  async reset5GConnection() {
+    const data = {
+      isTest: false,
+      goformId: 'SET_BEARER_PREFERENCE',
+      BearerPreference: 'Only_LTE',
+      notCallback: true,
+      AD: await this.#getAD(),
+    };
+    const options = {
+      method: 'POST',
+      headers: { Cookie: this.loginCookieValue },
+    };
+    const response = await this.#request(options, data);
+    if (response.data.result !== 'success') {
+      throw new Error('Error switching to 4G connection.');
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  
+    const dataReconnect = {
+      isTest: false,
+      goformId: 'SET_BEARER_PREFERENCE',
+      BearerPreference: 'Only_5G',
+      notCallback: true,
+      AD: await this.#getAD(),
+    };
+
+    const responseConnect = await this.#request(options, dataReconnect);
+    if (responseConnect.data.result !== 'success') {
+      throw new Error('Error switching to 5G connection.');
+    }
+  }
 }
 
 module.exports = Modem;
