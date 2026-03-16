@@ -378,7 +378,7 @@ class Modem {
     const dataReconnect = {
       isTest: false,
       goformId: 'SET_BEARER_PREFERENCE',
-      BearerPreference: 'Only_5G',
+      BearerPreference: 'WL_AND_5G',
       notCallback: true,
       AD: await this.#getAD(),
     };
